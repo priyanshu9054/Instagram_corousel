@@ -1,8 +1,11 @@
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from instagrapi.exceptions import MediaNotFound
 
 from pipeline import content_log, strategy
+
+IST = ZoneInfo("Asia/Kolkata")
 
 
 def _engagement_score(metrics: dict) -> float:
@@ -59,12 +62,21 @@ def build_report() -> dict:
             for k, v in groups.items()
         }
 
+    def _weekday_ist(r):
+        posted_at = r.get("posted_at")
+        if not posted_at:
+            return None
+        return datetime.fromisoformat(posted_at).astimezone(IST).strftime("%A")
+
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_posts": len(records),
         "posts_with_metrics": len(scored),
         "by_author": _group_by(lambda r: r.get("author")),
         "by_content_type": _group_by(lambda r: r.get("content_type")),
+        # Only meaningful once enough weeks of daily posts have accumulated — with one
+        # post/day, each weekday bucket only gains a sample every 7 days.
+        "by_weekday_ist": _group_by(_weekday_ist),
     }
 
 
