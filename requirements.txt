@@ -1,0 +1,11 @@
+requests
+python-dotenv
+openai
+Pillow
+imageio_ffmpeg
+instagrapi>=3.0.14
+fastapi
+uvicorn[standard]
+
+# Optional: only needed for the legacy browser_upload.py automation path.
+playwright

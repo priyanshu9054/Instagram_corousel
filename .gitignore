@@ -1,0 +1,52 @@
+# Environment variables / secrets
+.env
+.ig_session/
+
+# Runtime-generated state (recreated on every run / persisted via DATA_DIR volume in prod)
+assets/content_log.json
+assets/strategy.json
+assets/.last_quote.json
+assets/.last_track.json
+assets/_carousel_current/
+assets/_carousel_preview/
+
+# Pipeline output artifacts (regenerated each run)
+image.png
+reel.mp4
+reel.mp4.jpg
+reel_thumb.jpg
+caption.txt
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.hypothesis/
+htmlcov/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# OS generated files
+Thumbs.db
+ehthumbs.db

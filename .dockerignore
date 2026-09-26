@@ -1,0 +1,19 @@
+.env
+.ig_session/
+__pycache__/
+*.pyc
+.git/
+.DS_Store
+
+# Local generated/working artifacts — regenerated fresh on each run, not part of the image.
+image.png
+image1.png
+reel.mp4
+reel.mp4.jpg
+caption.txt
+assets/content_log.json
+assets/strategy.json
+assets/.last_quote.json
+assets/.last_track.json
+assets/_carousel_current/
+assets/_carousel_preview/
