@@ -109,7 +109,13 @@ def run_pipeline(dry_run: bool = False, content_type: Optional[str] = None) -> d
 
     live_strategy = strategy.load_strategy()
     chosen_author = strategy.choose_author(live_strategy)
-    chosen_type = content_type or strategy.choose_content_type(live_strategy)
+    if content_type:
+        chosen_type = content_type
+    else:
+        post_index = len(content_log.load_log())
+        cycle_slot = strategy.CONTENT_TYPE_CYCLE[post_index % len(strategy.CONTENT_TYPE_CYCLE)]
+        chosen_type = strategy.choose_content_type_cycled(post_index, live_strategy)
+        print(f"Content-type cycle: post #{post_index} -> slot '{cycle_slot}' -> {chosen_type}")
     print(f"Strategy picked: content_type={chosen_type}, author={chosen_author}")
 
     print(f"Logging in as @{username}...")

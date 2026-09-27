@@ -14,6 +14,12 @@ LEARNING_RATE = 0.25
 MIN_WEIGHT = 0.25
 MAX_WEIGHT = 3.0
 
+# Repeating post-count cycle (not calendar day) guaranteeing variety instead of
+# leaving format entirely to chance: every 3rd post is forced carousel, every 3rd+1
+# forced reel, and the remainder ("adaptive") falls back to the performance-weighted
+# pick below. Change this list to change the pattern — no other code needs updating.
+CONTENT_TYPE_CYCLE = ["carousel", "reel", "adaptive"]
+
 
 def _all_authors() -> list[str]:
     quotes = json.loads(QUOTES_FILE.read_text(encoding="utf-8"))
@@ -59,8 +65,21 @@ def choose_author(strategy: dict | None = None) -> str:
 
 
 def choose_content_type(strategy: dict | None = None) -> str:
+    """Pure performance-weighted pick — used directly, and as the 'adaptive' cycle slot."""
     strategy = strategy or load_strategy()
     return _weighted_choice(strategy["content_type_weights"])
+
+
+def choose_content_type_cycled(post_index: int, strategy: dict | None = None) -> str:
+    """
+    post_index: how many posts have been published so far (e.g. len(content_log)).
+    Cycles through CONTENT_TYPE_CYCLE by post count; "adaptive" slots defer to the
+    performance-weighted pick so the learning signal from /analyze still applies.
+    """
+    slot = CONTENT_TYPE_CYCLE[post_index % len(CONTENT_TYPE_CYCLE)]
+    if slot == "adaptive":
+        return choose_content_type(strategy)
+    return slot
 
 
 def _nudge(weights: dict[str, float], scores: dict[str, float], counts: dict[str, int]) -> list[str]:
