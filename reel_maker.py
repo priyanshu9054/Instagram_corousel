@@ -39,12 +39,19 @@ def create_reel_video(
     fps = 25
     total_frames = max(1, round(duration * fps))
     zoom_expr = "min(zoom+0.0008,1.12)"
+    # boxblur radius kept modest (was 25:5) — the full-radius version was part of
+    # what OOM-killed encoding on Railway's memory-constrained container.
     filter_complex = (
-        "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=25:5[bg];"
+        "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=12:2[bg];"
         "[0:v]scale=980:1700:force_original_aspect_ratio=decrease[fg];"
         "[bg][fg]overlay=(W-w)/2:(H-h)/2,"
         f"zoompan=z='{zoom_expr}':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps={fps}[v]"
     )
+    # ultrafast + capped threads: ffmpeg sizes its internal encoding buffers off the
+    # HOST's CPU count, which on a resource-limited container vastly overshoots what
+    # memory is actually available — this combo is what actually fixes the OOM-kill,
+    # not just the lighter blur above.
+    encode_args = ["-c:v", "libx264", "-preset", "ultrafast", "-threads", "2"]
 
     if audio_path and os.path.exists(audio_path):
         audio_filter = f"afade=t=in:ss=0:d=0.3,afade=t=out:st={fade_out_start:.2f}:d=0.5"
@@ -61,8 +68,7 @@ def create_reel_video(
             "-map", "[v]",
             "-map", "1:a",
             "-af", audio_filter,
-            "-c:v", "libx264",
-            "-preset", "fast",
+            *encode_args,
             "-pix_fmt", "yuv420p",
             "-c:a", "aac",
             "-b:a", "192k",
@@ -78,8 +84,7 @@ def create_reel_video(
             "-filter_complex", filter_complex,
             "-map", "[v]",
             "-map", "1:a",
-            "-c:v", "libx264",
-            "-preset", "fast",
+            *encode_args,
             "-pix_fmt", "yuv420p",
             "-c:a", "aac",
             "-t", str(duration),
