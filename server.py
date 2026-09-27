@@ -23,13 +23,21 @@ e.g. weekly, so there's actually new engagement data to learn from):
 Inspect current strategy weights / recent post log (read-only):
     curl http://localhost:8000/strategy -H "x-api-key: $API_TRIGGER_KEY"
     curl http://localhost:8000/content-log -H "x-api-key: $API_TRIGGER_KEY"
+
+Seed this deployment's Instagram session from an already-trusted local one (avoids
+a scrutinized fresh login from a datacenter IP) — without a persistent volume this
+only lasts until the next restart/redeploy:
+    curl -X POST http://localhost:8000/session/upload -H "x-api-key: $API_TRIGGER_KEY" \
+      -H "Content-Type: application/json" -d @.ig_session/instagrapi_settings.json
+    curl http://localhost:8000/session/status -H "x-api-key: $API_TRIGGER_KEY"
 """
+import json
 import os
 import traceback
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import Body, FastAPI, Header, HTTPException
 
 from pipeline.run import run_pipeline
 from pipeline import ig_client, analytics, strategy, content_log
@@ -97,6 +105,33 @@ def get_content_log(limit: int = 50, x_api_key: str | None = Header(default=None
     _check_key(x_api_key)
     records = content_log.load_log()
     return {"total": len(records), "records": records[-limit:]}
+
+
+@app.post("/session/upload")
+def upload_session(session: dict = Body(...), x_api_key: str | None = Header(default=None)):
+    """
+    Seed this deployment's Instagram login session from an already-trusted one
+    (e.g. dumped locally via instagrapi's Client.dump_settings). A fresh login from
+    a datacenter IP with no prior session gets scrutinized far more heavily by
+    Instagram's anti-bot systems than reusing an established session — this avoids
+    that entirely. Without a persistent volume at DATA_DIR, this only lasts until
+    the next redeploy/restart.
+    """
+    _check_key(x_api_key)
+    ig_client.SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
+    ig_client.SESSION_FILE.write_text(json.dumps(session), encoding="utf-8")
+    return {"status": "ok", "path": str(ig_client.SESSION_FILE), "bytes_written": len(json.dumps(session))}
+
+
+@app.get("/session/status")
+def session_status(x_api_key: str | None = Header(default=None)):
+    _check_key(x_api_key)
+    exists = ig_client.SESSION_FILE.exists()
+    return {
+        "exists": exists,
+        "path": str(ig_client.SESSION_FILE),
+        "size_bytes": ig_client.SESSION_FILE.stat().st_size if exists else None,
+    }
 
 
 @app.get("/health")
