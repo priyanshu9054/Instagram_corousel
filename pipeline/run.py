@@ -80,7 +80,8 @@ def _build_reel(preferred_author: Optional[str], cl) -> dict:
 def _build_carousel(preferred_author: Optional[str]) -> dict:
     result = carousel_card.generate(CAROUSEL_DIR, preferred_author=preferred_author)
     print(f"Quote: \"{result['quote']}\" — {result['author']}")
-    print(f"Reflection slide: {result['reflection']}")
+    print(f"Hook: {result['copy']['hook']}")
+    print(f"Shareable takeaway: {result['copy']['shareable']}")
     return {
         "content_type": "carousel",
         "quote": result["quote"],
