@@ -90,9 +90,10 @@ def create_reel_video(
     if res.returncode != 0:
         # ffmpeg's actual error is at the END of stderr — the start is just a
         # version/build banner, which was silently eating the whole truncation
-        # budget and hiding the real failure reason.
-        print(f"FFmpeg error: {res.stderr[-1500:]}")
-        raise RuntimeError(f"Failed to generate Reel video: {res.stderr[-800:]}")
+        # budget and hiding the real failure reason. Return code -9/137 (SIGKILL)
+        # with no explicit ffmpeg error usually means the OS/container OOM-killed it.
+        print(f"FFmpeg error (exit {res.returncode}): {res.stderr[-1500:]}")
+        raise RuntimeError(f"Failed to generate Reel video (exit code {res.returncode}): {res.stderr[-800:]}")
 
     print(f"✅ Reel video created successfully: {output_path} ({duration:.1f}s, 1080x1920)")
     return output_path
