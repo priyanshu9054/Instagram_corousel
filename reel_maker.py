@@ -8,13 +8,13 @@ FFMPEG_EXE = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def _ken_burns_enabled() -> bool:
-    # Defaults OFF: zoompan generates duration*fps frames (~150-175 for a 6-7s reel)
-    # instead of encoding one static frame, and that was confirmed (via SIGKILL/exit
-    # -9) to OOM-kill ffmpeg on Railway's current memory limit even after trimming
-    # blur radius and capping encoder threads. A broken reel pipeline is worse than
-    # a static one — re-enable with REEL_KEN_BURNS=1 once resources allow (e.g. a
-    # bigger Railway plan), no code change needed.
-    return getenv_clean("REEL_KEN_BURNS", "0") not in ("0", "false", "False")
+    # Re-enabled: the earlier SIGKILL/exit -9 failures turned out to be caused by
+    # Railway's ~15s synchronous-request ceiling (confirmed via a pure CPU-bound
+    # /debug/burn test failing identically with zero ffmpeg involved), not by
+    # zoompan's memory use — /post-reel now runs the pipeline in a background job
+    # (pipeline/jobs.py), so the extra encoding time is no longer time-constrained.
+    # Set REEL_KEN_BURNS=0 to fall back to a static frame if needed.
+    return getenv_clean("REEL_KEN_BURNS", "1") not in ("0", "false", "False")
 
 
 def create_reel_video(
