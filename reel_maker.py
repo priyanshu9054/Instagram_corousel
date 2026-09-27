@@ -76,6 +76,12 @@ def create_reel_video(
     # memory is actually available — this combo is what actually fixes the OOM-kill,
     # not just the lighter blur above.
     encode_args = ["-c:v", "libx264", "-preset", "ultrafast", "-threads", "2"]
+    # Global options — must precede the first -i. -threads only caps the encoder;
+    # filter threading is separate and defaults to the HOST's detected CPU count
+    # (48 on Railway's shared host, though the container is capped at ~1GB memory),
+    # which was very likely the real driver behind ffmpeg getting SIGKILL'd even on
+    # the simplest possible encode.
+    global_args = ["-y", "-filter_threads", "1", "-filter_complex_threads", "1"]
 
     if audio_path and os.path.exists(audio_path):
         audio_filter = f"afade=t=in:ss=0:d=0.3,afade=t=out:st={fade_out_start:.2f}:d=0.5"
@@ -83,7 +89,7 @@ def create_reel_video(
         # point instead of a possibly-silent intro; harmless (clamped to 0) for short clips.
         safe_offset = max(0.0, audio_start_offset)
         cmd = [
-            FFMPEG_EXE, "-y",
+            FFMPEG_EXE, *global_args,
             *image_input_args,
             # Loop the audio indefinitely so short clips fill the full reel duration
             # instead of truncating the video down to the clip's own length.
@@ -102,7 +108,7 @@ def create_reel_video(
     else:
         # Fallback silent audio so Instagram accepts it as a valid video with audio stream
         cmd = [
-            FFMPEG_EXE, "-y",
+            FFMPEG_EXE, *global_args,
             *image_input_args,
             "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
             "-filter_complex", filter_complex,
