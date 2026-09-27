@@ -7,8 +7,13 @@ strategy's weights toward whatever's actually working.
 Run:
     uvicorn server:app --host 0.0.0.0 --port 8000
 
-Post content (reel or carousel, picked by the current growth strategy):
+Post content (reel or carousel, picked by the current growth strategy). Some
+platforms (Railway included) enforce a hard ceiling of roughly 15s on synchronous
+request handling, far shorter than this pipeline actually takes (Groq calls + audio
+download + ffmpeg + Instagram login/upload = 30-90s+), so this returns immediately
+with a job_id and does the real work in a background thread:
     curl -X POST http://localhost:8000/post-reel -H "x-api-key: $API_TRIGGER_KEY"
+    curl http://localhost:8000/jobs/<job_id> -H "x-api-key: $API_TRIGGER_KEY"
 
 Dry run (builds the content, skips the actual Instagram upload):
     curl -X POST "http://localhost:8000/post-reel?dry_run=true" -H "x-api-key: $API_TRIGGER_KEY"
@@ -17,8 +22,10 @@ Force a content type instead of letting the strategy pick:
     curl -X POST "http://localhost:8000/post-reel?content_type=carousel" -H "x-api-key: $API_TRIGGER_KEY"
 
 Refresh metrics on past posts and adjust the strategy (run this on a slower cron,
-e.g. weekly, so there's actually new engagement data to learn from):
+e.g. weekly, so there's actually new engagement data to learn from) — also
+backgrounded for the same reason:
     curl -X POST http://localhost:8000/analyze -H "x-api-key: $API_TRIGGER_KEY"
+    curl http://localhost:8000/jobs/<job_id> -H "x-api-key: $API_TRIGGER_KEY"
 
 Inspect current strategy weights / recent post log (read-only):
     curl http://localhost:8000/strategy -H "x-api-key: $API_TRIGGER_KEY"
@@ -33,14 +40,13 @@ only lasts until the next restart/redeploy:
 """
 import json
 import os
-import traceback
 from typing import Optional
 
 from dotenv import load_dotenv
 from fastapi import Body, FastAPI, Header, HTTPException
 
 from pipeline.run import run_pipeline
-from pipeline import ig_client, analytics, strategy, content_log
+from pipeline import ig_client, analytics, strategy, content_log, jobs
 from pipeline.paths import getenv_clean
 
 load_dotenv()
@@ -65,13 +71,8 @@ def post_reel(
     if content_type and content_type not in ("reel", "carousel"):
         raise HTTPException(status_code=400, detail="content_type must be 'reel' or 'carousel'")
 
-    try:
-        result = run_pipeline(dry_run=dry_run, content_type=content_type)
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
-    return {"status": "dry_run" if dry_run else "posted", **result}
+    job_id = jobs.run_in_background("post-reel", run_pipeline, dry_run=dry_run, content_type=content_type)
+    return {"status": "started", "job_id": job_id}
 
 
 @app.post("/analyze")
@@ -84,14 +85,21 @@ def analyze(x_api_key: str | None = Header(default=None)):
     if not username or not password:
         raise HTTPException(status_code=500, detail="INSTAGRAM_USERNAME / INSTAGRAM_PASSWORD missing from .env")
 
-    try:
+    def _analyze():
         cl = ig_client.get_client(username, password)
-        result = analytics.run_analysis_cycle(cl)
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        return analytics.run_analysis_cycle(cl)
 
-    return result
+    job_id = jobs.run_in_background("analyze", _analyze)
+    return {"status": "started", "job_id": job_id}
+
+
+@app.get("/jobs/{job_id}")
+def get_job(job_id: str, x_api_key: str | None = Header(default=None)):
+    _check_key(x_api_key)
+    job = jobs.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="job not found")
+    return job
 
 
 @app.get("/strategy")
