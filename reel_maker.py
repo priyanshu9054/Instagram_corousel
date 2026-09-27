@@ -88,8 +88,11 @@ def create_reel_video(
 
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
-        print(f"FFmpeg error: {res.stderr[:500]}")
-        raise RuntimeError(f"Failed to generate Reel video: {res.stderr[:300]}")
+        # ffmpeg's actual error is at the END of stderr — the start is just a
+        # version/build banner, which was silently eating the whole truncation
+        # budget and hiding the real failure reason.
+        print(f"FFmpeg error: {res.stderr[-1500:]}")
+        raise RuntimeError(f"Failed to generate Reel video: {res.stderr[-800:]}")
 
     print(f"✅ Reel video created successfully: {output_path} ({duration:.1f}s, 1080x1920)")
     return output_path
@@ -112,7 +115,7 @@ def extract_thumbnail(video_path: str, thumbnail_path: str = None) -> str:
     ]
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
-        raise RuntimeError(f"Failed to extract thumbnail: {res.stderr[:300]}")
+        raise RuntimeError(f"Failed to extract thumbnail: {res.stderr[-800:]}")
     return thumbnail_path
 
 
