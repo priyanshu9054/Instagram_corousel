@@ -174,6 +174,24 @@ def diagnostics(x_api_key: str | None = Header(default=None)):
     return info
 
 
+@app.get("/debug/burn")
+def debug_burn(seconds: int = 20, x_api_key: str | None = Header(default=None)):
+    """
+    Synthetic CPU-bound block with no ffmpeg/subprocess involved — isolates whether
+    reel generation's ~15s-then-502 failures (fixed duration across several very
+    different ffmpeg configs) are actually about ffmpeg's memory/CPU use, or a
+    platform-level "worker unresponsive" timeout that would kill ANY long
+    synchronous request handler regardless of what it's doing.
+    """
+    _check_key(x_api_key)
+    import time
+    start = time.time()
+    x = 0
+    while time.time() - start < seconds:
+        x += 1  # busy-loop, not time.sleep — mirrors a blocking subprocess.run more closely
+    return {"seconds_requested": seconds, "elapsed": time.time() - start, "iterations": x}
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
