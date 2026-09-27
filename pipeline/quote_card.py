@@ -5,7 +5,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageEnhance
 
-from pipeline.paths import STATIC_ASSETS_DIR, STATE_DIR
+from pipeline.paths import STATIC_ASSETS_DIR, STATE_DIR, getenv_clean
 
 ROOT = Path(__file__).resolve().parent.parent
 QUOTES_FILE = STATIC_ASSETS_DIR / "quotes.json"
@@ -119,6 +119,15 @@ def render_card(quote: str, author: str, portrait_file: str, output_path: Path) 
     author_text = f"— {author}"
     aw = draw.textbbox((0, 0), author_text, font=author_font)[2]
     draw.text(((CARD_SIZE[0] - aw) / 2, y + 30), author_text, font=author_font, fill=(230, 230, 230))
+
+    # Subtle handle watermark: keeps the brand attached when this gets screenshotted
+    # or reposted elsewhere, and nudges viewers who see it that way back to a follow.
+    handle = getenv_clean("INSTAGRAM_USERNAME", "")
+    if handle:
+        handle_font = ImageFont.truetype(FONT_REGULAR, 28)
+        handle_text = f"@{handle}"
+        hw = draw.textbbox((0, 0), handle_text, font=handle_font)[2]
+        draw.text(((CARD_SIZE[0] - hw) / 2, CARD_SIZE[1] - 55), handle_text, font=handle_font, fill=(160, 160, 160))
 
     output_path = Path(output_path)
     img.save(output_path, "PNG")

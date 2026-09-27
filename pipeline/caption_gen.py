@@ -1,14 +1,26 @@
+import random
+
 from openai import OpenAI
 
 from pipeline.paths import getenv_clean
 
 DEFAULT_MODEL = getenv_clean("GROQ_MODEL", "openai/gpt-oss-120b")
 
+# Rotate the engagement mechanic so captions don't all read the same way — each
+# drives a different signal the algorithm rewards (comments, saves, shares).
+_HOOK_STYLES = [
+    "End by asking a genuine, specific question that invites people to answer in the "
+    "comments (not a generic 'what do you think?').",
+    "End with a direct prompt to save this post for a moment they need it later.",
+    "End with a prompt to tag/send this to one specific kind of person who needs to see it.",
+    "End by asking people to comment which word or phrase in the quote hit them hardest.",
+]
+
 
 def _fallback_caption(quote: str, author: str) -> str:
     tag = author.lower().replace(" ", "")
     return (
-        f"Words to sit with today, from {author}. \U0001f90d\n\n"
+        f"Words to sit with today, from {author}. Which line hit you hardest? \U0001f90d\n\n"
         f"#philosophy #stoicism #{tag} #wisdomquotes #reels #viral #mindset"
     )
 
@@ -21,6 +33,7 @@ def generate_caption(quote: str, author: str) -> str:
         return _fallback_caption(quote, author)
 
     client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key)
+    hook_style = random.choice(_HOOK_STYLES)
 
     try:
         resp = client.chat.completions.create(
@@ -30,8 +43,11 @@ def generate_caption(quote: str, author: str) -> str:
                 "content": (
                     f'Write a short, engaging Instagram Reel caption to go with this quote by {author}:\n\n'
                     f'"{quote}"\n\n'
-                    "1-3 sentences reflecting on what it means today, warm and human tone. "
+                    "1-2 sentences reflecting on what it means today, warm and human tone. "
                     "Do not repeat the quote itself (it's already shown on screen). "
+                    f"{hook_style} "
+                    "This engagement hook is the most important part — it's what turns a passive "
+                    "viewer into a comment/save/share, which is the whole point of this caption. "
                     "End with 6-10 relevant hashtags, mixing philosophy/stoicism tags with reach tags "
                     "like #reels or #viral. Return only the caption, nothing else."
                 ),

@@ -30,10 +30,20 @@ def create_reel_video(
     # 1. Background: scale image to fill 1080x1920, crop, apply heavy blur
     # 2. Foreground: scale image to fit nicely within 980x1700
     # 3. Overlay foreground centered on blurred background
+    # 4. Ken Burns: slow zoom-in on the composed frame — a static image reads as
+    #    low-effort in the Reels feed; gentle motion holds watch-time, which the
+    #    algorithm weighs heavily for reach.
+    # zoompan generates the full frame sequence itself from the single input frame
+    # (via d=total_frames) — combining it with a looped "-loop 1" input instead
+    # resets its internal zoom state every frame and produces no visible motion.
+    fps = 25
+    total_frames = max(1, round(duration * fps))
+    zoom_expr = "min(zoom+0.0008,1.12)"
     filter_complex = (
         "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=25:5[bg];"
         "[0:v]scale=980:1700:force_original_aspect_ratio=decrease[fg];"
-        "[bg][fg]overlay=(W-w)/2:(H-h)/2[v]"
+        "[bg][fg]overlay=(W-w)/2:(H-h)/2,"
+        f"zoompan=z='{zoom_expr}':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps={fps}[v]"
     )
 
     if audio_path and os.path.exists(audio_path):
@@ -43,7 +53,7 @@ def create_reel_video(
         safe_offset = max(0.0, audio_start_offset)
         cmd = [
             FFMPEG_EXE, "-y",
-            "-loop", "1", "-i", image_path,
+            "-i", image_path,
             # Loop the audio indefinitely so short clips fill the full reel duration
             # instead of truncating the video down to the clip's own length.
             "-ss", str(safe_offset), "-stream_loop", "-1", "-i", audio_path,
@@ -63,7 +73,7 @@ def create_reel_video(
         # Fallback silent audio so Instagram accepts it as a valid video with audio stream
         cmd = [
             FFMPEG_EXE, "-y",
-            "-loop", "1", "-i", image_path,
+            "-i", image_path,
             "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
             "-filter_complex", filter_complex,
             "-map", "[v]",
