@@ -2,7 +2,19 @@ import os
 import subprocess
 import imageio_ffmpeg
 
+from pipeline.paths import getenv_clean
+
 FFMPEG_EXE = imageio_ffmpeg.get_ffmpeg_exe()
+
+
+def _ken_burns_enabled() -> bool:
+    # Defaults OFF: zoompan generates duration*fps frames (~150-175 for a 6-7s reel)
+    # instead of encoding one static frame, and that was confirmed (via SIGKILL/exit
+    # -9) to OOM-kill ffmpeg on Railway's current memory limit even after trimming
+    # blur radius and capping encoder threads. A broken reel pipeline is worse than
+    # a static one — re-enable with REEL_KEN_BURNS=1 once resources allow (e.g. a
+    # bigger Railway plan), no code change needed.
+    return getenv_clean("REEL_KEN_BURNS", "0") not in ("0", "false", "False")
 
 
 def create_reel_video(
@@ -30,23 +42,35 @@ def create_reel_video(
     # 1. Background: scale image to fill 1080x1920, crop, apply heavy blur
     # 2. Foreground: scale image to fit nicely within 980x1700
     # 3. Overlay foreground centered on blurred background
-    # 4. Ken Burns: slow zoom-in on the composed frame — a static image reads as
-    #    low-effort in the Reels feed; gentle motion holds watch-time, which the
-    #    algorithm weighs heavily for reach.
-    # zoompan generates the full frame sequence itself from the single input frame
-    # (via d=total_frames) — combining it with a looped "-loop 1" input instead
-    # resets its internal zoom state every frame and produces no visible motion.
+    # 4. Ken Burns (optional, see _ken_burns_enabled): slow zoom-in on the composed
+    #    frame — a static image reads as low-effort in the Reels feed; motion holds
+    #    watch-time, which the algorithm weighs heavily for reach. zoompan generates
+    #    the full frame sequence itself from a single input frame (via d=total_frames)
+    #    — combining it with a looped "-loop 1" input instead resets its internal
+    #    zoom state every frame and produces no visible motion.
+    # boxblur radius kept modest (was 25:5) — full-radius blur plus zoompan's
+    # per-frame regeneration was part of what OOM-killed encoding on Railway's
+    # memory-constrained container.
     fps = 25
-    total_frames = max(1, round(duration * fps))
-    zoom_expr = "min(zoom+0.0008,1.12)"
-    # boxblur radius kept modest (was 25:5) — the full-radius version was part of
-    # what OOM-killed encoding on Railway's memory-constrained container.
-    filter_complex = (
-        "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=12:2[bg];"
-        "[0:v]scale=980:1700:force_original_aspect_ratio=decrease[fg];"
-        "[bg][fg]overlay=(W-w)/2:(H-h)/2,"
-        f"zoompan=z='{zoom_expr}':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps={fps}[v]"
-    )
+    ken_burns = _ken_burns_enabled()
+    if ken_burns:
+        total_frames = max(1, round(duration * fps))
+        zoom_expr = "min(zoom+0.0008,1.12)"
+        filter_complex = (
+            "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=12:2[bg];"
+            "[0:v]scale=980:1700:force_original_aspect_ratio=decrease[fg];"
+            "[bg][fg]overlay=(W-w)/2:(H-h)/2,"
+            f"zoompan=z='{zoom_expr}':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps={fps}[v]"
+        )
+        image_input_args = ["-i", image_path]  # single frame; zoompan expands it
+    else:
+        filter_complex = (
+            "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=12:2[bg];"
+            "[0:v]scale=980:1700:force_original_aspect_ratio=decrease[fg];"
+            "[bg][fg]overlay=(W-w)/2:(H-h)/2[v]"
+        )
+        image_input_args = ["-loop", "1", "-i", image_path]  # continuous static frame
+
     # ultrafast + capped threads: ffmpeg sizes its internal encoding buffers off the
     # HOST's CPU count, which on a resource-limited container vastly overshoots what
     # memory is actually available — this combo is what actually fixes the OOM-kill,
@@ -60,7 +84,7 @@ def create_reel_video(
         safe_offset = max(0.0, audio_start_offset)
         cmd = [
             FFMPEG_EXE, "-y",
-            "-i", image_path,
+            *image_input_args,
             # Loop the audio indefinitely so short clips fill the full reel duration
             # instead of truncating the video down to the clip's own length.
             "-ss", str(safe_offset), "-stream_loop", "-1", "-i", audio_path,
@@ -79,7 +103,7 @@ def create_reel_video(
         # Fallback silent audio so Instagram accepts it as a valid video with audio stream
         cmd = [
             FFMPEG_EXE, "-y",
-            "-i", image_path,
+            *image_input_args,
             "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
             "-filter_complex", filter_complex,
             "-map", "[v]",
