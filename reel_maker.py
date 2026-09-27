@@ -5,20 +5,6 @@ import imageio_ffmpeg
 FFMPEG_EXE = imageio_ffmpeg.get_ffmpeg_exe()
 
 
-def get_audio_duration(audio_path: str) -> float:
-    """Return the duration of the audio file in seconds using FFmpeg."""
-    if not audio_path or not os.path.exists(audio_path):
-        return 0.0
-    cmd = [FFMPEG_EXE, "-i", audio_path]
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    for line in res.stderr.splitlines():
-        if "Duration:" in line:
-            parts = line.split("Duration:")[1].split(",")[0].strip()
-            h, m, s = parts.split(":")
-            return float(h) * 3600 + float(m) * 60 + float(s)
-    return 0.0
-
-
 def create_reel_video(
     image_path: str,
     audio_path: str = None,
@@ -35,16 +21,9 @@ def create_reel_video(
 
     print(f"Creating Reel video from {os.path.basename(image_path)}...")
 
-    # Determine duration
-    if audio_path and os.path.exists(audio_path):
-        audio_len = get_audio_duration(audio_path)
-        if 4.0 <= audio_len <= 15.0:
-            duration = audio_len
-        elif audio_len > 15.0:
-            duration = min(duration, 10.0)
-    else:
-        duration = 7.0
-
+    # Duration is always exactly what the caller asked for — the audio (whether a
+    # full song trimmed via -t, or a short clip looped via -stream_loop) is fit to
+    # this length, never the other way around.
     fade_out_start = max(0.0, duration - 0.5)
 
     # Complex filter for stylish 9:16 vertical Reel:

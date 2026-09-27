@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 from pathlib import Path
 from typing import Optional
@@ -27,7 +28,7 @@ IMAGE_PATH = ROOT / "image.png"
 REEL_PATH = ROOT / "reel.mp4"
 CAPTION_PATH = ROOT / "caption.txt"
 CAROUSEL_DIR = ROOT / "assets" / "_carousel_current"
-DURATION_SECONDS = 7.0
+REEL_DURATION_RANGE = (5.0, 7.0)  # seconds — every reel lands in this window, music included
 
 
 def _track_label(track: Optional[dict]) -> Optional[str]:
@@ -58,11 +59,12 @@ def _build_reel(preferred_author: Optional[str], cl) -> dict:
         audio_path = audio_picker.pick_audio()
         print(f"Using local audio library: {audio_path or '(none — silent fallback)'}")
 
+    duration = round(random.uniform(*REEL_DURATION_RANGE), 1)
     reel_path = reel_maker.create_reel_video(
         image_path=str(IMAGE_PATH),
         audio_path=audio_path,
         output_path=str(REEL_PATH),
-        duration=DURATION_SECONDS,
+        duration=duration,
         audio_start_offset=audio_start_offset,
     )
 
