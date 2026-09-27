@@ -10,7 +10,7 @@ from pipeline.paths import STATIC_ASSETS_DIR, STATE_DIR, getenv_clean
 ROOT = Path(__file__).resolve().parent.parent
 QUOTES_FILE = STATIC_ASSETS_DIR / "quotes.json"
 PORTRAITS_DIR = STATIC_ASSETS_DIR / "portraits"
-STATE_FILE = STATE_DIR / ".last_quote.json"
+SHUFFLE_STATE_FILE = STATE_DIR / ".quote_shuffle.json"
 
 CARD_SIZE = (1080, 1350)
 # Bundled (OFL-licensed) fonts — not the macOS system Georgia, which can't be
@@ -24,29 +24,53 @@ def _load_quotes() -> list[dict]:
         return json.load(f)
 
 
+def _load_shuffle_state() -> dict:
+    if not SHUFFLE_STATE_FILE.exists():
+        return {}
+    try:
+        return json.loads(SHUFFLE_STATE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _save_shuffle_state(state: dict) -> None:
+    SHUFFLE_STATE_FILE.write_text(json.dumps(state), encoding="utf-8")
+
+
 def pick_quote(preferred_author: str | None = None) -> dict:
     """
-    Pick a quote, avoiding an immediate repeat of the last one used. If
-    preferred_author is given (e.g. chosen by the growth strategy), only quotes from
-    that philosopher are considered.
+    Shuffle-bag picker: every quote in scope (a specific philosopher's pool, or the
+    whole set) gets used exactly once before any of them repeat, instead of picking
+    with replacement (which could hand back the same quote 2-3 times before ever
+    reaching the others). The bag reshuffles and refills only once fully emptied.
     """
     quotes = _load_quotes()
     if preferred_author:
         by_author = [q for q in quotes if q["author"] == preferred_author]
         quotes = by_author or quotes
 
-    last_quote = None
-    if STATE_FILE.exists():
-        try:
-            last_quote = json.loads(STATE_FILE.read_text(encoding="utf-8")).get("quote")
-        except Exception:
-            pass
+    scope_key = preferred_author or "__all__"
+    all_texts = [q["quote"] for q in quotes]
+    by_text = {q["quote"]: q for q in quotes}
 
-    candidates = [q for q in quotes if q["quote"] != last_quote] or quotes
-    chosen = random.choice(candidates)
+    state = _load_shuffle_state()
+    remaining = [t for t in state.get(scope_key, []) if t in by_text]
 
-    STATE_FILE.write_text(json.dumps({"quote": chosen["quote"]}), encoding="utf-8")
-    return chosen
+    if not remaining:
+        remaining = all_texts.copy()
+        random.shuffle(remaining)
+        # Avoid the bag's own first pick matching the very last thing this scope
+        # handed out right before refilling (the seam between two cycles).
+        last_served = state.get(f"{scope_key}__last")
+        if len(remaining) > 1 and remaining[0] == last_served:
+            remaining.append(remaining.pop(0))
+
+    chosen_text = remaining.pop(0)
+    state[scope_key] = remaining
+    state[f"{scope_key}__last"] = chosen_text
+    _save_shuffle_state(state)
+
+    return by_text[chosen_text]
 
 
 def fit_font(draw: ImageDraw.ImageDraw, text: str, max_width: int, max_height: int,
@@ -77,13 +101,21 @@ def render_card(quote: str, author: str, portrait_file: str, output_path: Path) 
     portrait_path = PORTRAITS_DIR / portrait_file
     img = Image.open(portrait_path).convert("RGB")
 
+    # Subtle randomized variation — same portrait/quote pair (inevitable once the
+    # quote pool cycles fully, ~114 days in) still won't render pixel-identical.
+    # Ranges kept tight so the brand's look stays consistent, not noticeably random.
+    centering_y = random.uniform(0.28, 0.42)
+    contrast = random.uniform(1.02, 1.18)
+    brightness = random.uniform(0.50, 0.60)
+    gradient_darkness = random.randint(0, 20)  # extra RGB offset toward black
+
     # Cover-crop to the card aspect ratio.
-    img = ImageOps.fit(img, CARD_SIZE, method=Image.LANCZOS, centering=(0.5, 0.35))
+    img = ImageOps.fit(img, CARD_SIZE, method=Image.LANCZOS, centering=(0.5, centering_y))
 
     # Desaturate and darken for a moody monochrome look, matching the reference style.
     img = ImageOps.grayscale(img).convert("RGB")
-    img = ImageEnhance.Contrast(img).enhance(1.1)
-    img = ImageEnhance.Brightness(img).enhance(0.55)
+    img = ImageEnhance.Contrast(img).enhance(contrast)
+    img = ImageEnhance.Brightness(img).enhance(brightness)
 
     # Vertical gradient overlay: darkest where the text sits (lower two-thirds).
     gradient = Image.new("L", (1, CARD_SIZE[1]), color=0)
@@ -92,7 +124,8 @@ def render_card(quote: str, author: str, portrait_file: str, output_path: Path) 
         alpha = int(60 + 140 * min(1.0, max(0.0, (t - 0.25) / 0.6)))
         gradient.putpixel((0, y), alpha)
     gradient = gradient.resize(CARD_SIZE)
-    overlay = Image.new("RGB", CARD_SIZE, color=(10, 10, 10))
+    overlay_shade = 10 + gradient_darkness
+    overlay = Image.new("RGB", CARD_SIZE, color=(overlay_shade, overlay_shade, overlay_shade))
     img = Image.composite(overlay, img, gradient)
 
     draw = ImageDraw.Draw(img)

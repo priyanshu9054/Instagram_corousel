@@ -49,7 +49,10 @@ def generate_caption(quote: str, author: str) -> str:
                     "This engagement hook is the most important part — it's what turns a passive "
                     "viewer into a comment/save/share, which is the whole point of this caption. "
                     "End with 6-10 relevant hashtags, mixing philosophy/stoicism tags with reach tags "
-                    "like #reels or #viral. Return only the caption, nothing else."
+                    "like #reels or #viral. Only use a hashtag naming a country, culture, or "
+                    "nationality if you are certain it is factually correct for this specific "
+                    "philosopher — when unsure, skip it and use a generic philosophy/mindset tag "
+                    "instead. Return only the caption, nothing else."
                 ),
             }],
             max_tokens=350,

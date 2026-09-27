@@ -32,5 +32,105 @@
   {"author": "Confucius", "portrait": "confucius.jpg", "quote": "It does not matter how slowly you go as long as you do not stop."},
   {"author": "Confucius", "portrait": "confucius.jpg", "quote": "Our greatest glory is not in never falling, but in rising every time we fall."},
   {"author": "Confucius", "portrait": "confucius.jpg", "quote": "The man who moves a mountain begins by carrying away small stones."},
-  {"author": "Confucius", "portrait": "confucius.jpg", "quote": "Real knowledge is to know the extent of one's ignorance."}
+  {"author": "Confucius", "portrait": "confucius.jpg", "quote": "Real knowledge is to know the extent of one's ignorance."},
+
+  {"author": "Epicurus", "portrait": "epicurus.jpg", "quote": "Not what we have but what we enjoy constitutes our abundance."},
+  {"author": "Epicurus", "portrait": "epicurus.jpg", "quote": "It is not the man who has too little, but the man who craves more, that is poor."},
+  {"author": "Epicurus", "portrait": "epicurus.jpg", "quote": "Death does not concern us, because as long as we exist, death is not here."},
+  {"author": "Epicurus", "portrait": "epicurus.jpg", "quote": "He who is not satisfied with a little is satisfied with nothing."},
+
+  {"author": "Diogenes", "portrait": "diogenes.jpg", "quote": "He has the most who is content with the least."},
+  {"author": "Diogenes", "portrait": "diogenes.jpg", "quote": "The foundation of every state is the education of its youth."},
+  {"author": "Diogenes", "portrait": "diogenes.jpg", "quote": "I am a citizen of the world."},
+  {"author": "Diogenes", "portrait": "diogenes.jpg", "quote": "It is the privilege of the gods to want nothing, and of godlike men to want little."},
+
+  {"author": "Zeno", "portrait": "zeno.jpg", "quote": "Well-being is realized by small steps, but is truly no small thing."},
+  {"author": "Zeno", "portrait": "zeno.jpg", "quote": "Man conquers the world by conquering himself."},
+  {"author": "Zeno", "portrait": "zeno.jpg", "quote": "The goal of life is living in agreement with nature."},
+  {"author": "Zeno", "portrait": "zeno.jpg", "quote": "No evil is honorable, but death is honorable; therefore death is not evil."},
+
+  {"author": "Pythagoras", "portrait": "pythagoras.jpg", "quote": "Silence is better than unmeaning words."},
+  {"author": "Pythagoras", "portrait": "pythagoras.jpg", "quote": "Choose rather to be strong of soul than strong of body."},
+  {"author": "Pythagoras", "portrait": "pythagoras.jpg", "quote": "Educate the children and it won't be necessary to punish the men."},
+  {"author": "Pythagoras", "portrait": "pythagoras.jpg", "quote": "No man is free who cannot command himself."},
+
+  {"author": "Heraclitus", "portrait": "heraclitus.jpg", "quote": "No man ever steps in the same river twice, for it's not the same river and he's not the same man."},
+  {"author": "Heraclitus", "portrait": "heraclitus.jpg", "quote": "Character is destiny."},
+  {"author": "Heraclitus", "portrait": "heraclitus.jpg", "quote": "The only constant in life is change."},
+  {"author": "Heraclitus", "portrait": "heraclitus.jpg", "quote": "Much learning does not teach understanding."},
+
+  {"author": "Cicero", "portrait": "cicero.jpg", "quote": "A room without books is like a body without a soul."},
+  {"author": "Cicero", "portrait": "cicero.jpg", "quote": "The life given us, by nature, is short; but the memory of a well-spent life is eternal."},
+  {"author": "Cicero", "portrait": "cicero.jpg", "quote": "While there's life, there's hope."},
+  {"author": "Cicero", "portrait": "cicero.jpg", "quote": "Gratitude is not only the greatest of virtues, but the parent of all others."},
+
+  {"author": "Augustine", "portrait": "augustine.jpg", "quote": "The world is a book, and those who do not travel read only one page."},
+  {"author": "Augustine", "portrait": "augustine.jpg", "quote": "Patience is the companion of wisdom."},
+  {"author": "Augustine", "portrait": "augustine.jpg", "quote": "In essentials, unity; in doubtful things, liberty; in all things, charity."},
+  {"author": "Augustine", "portrait": "augustine.jpg", "quote": "Faith is to believe what you do not see; the reward of this faith is to see what you believe."},
+
+  {"author": "Descartes", "portrait": "descartes.jpg", "quote": "I think, therefore I am."},
+  {"author": "Descartes", "portrait": "descartes.jpg", "quote": "The reading of all good books is like conversation with the finest minds of past centuries."},
+  {"author": "Descartes", "portrait": "descartes.jpg", "quote": "Divide each difficulty into as many parts as is feasible and necessary to resolve it."},
+  {"author": "Descartes", "portrait": "descartes.jpg", "quote": "It is not enough to have a good mind; the main thing is to use it well."},
+
+  {"author": "Spinoza", "portrait": "spinoza.jpg", "quote": "To understand is to be free."},
+  {"author": "Spinoza", "portrait": "spinoza.jpg", "quote": "All things excellent are as difficult as they are rare."},
+  {"author": "Spinoza", "portrait": "spinoza.jpg", "quote": "Peace is not an absence of war, it is a virtue, a state of mind, a disposition for benevolence."},
+  {"author": "Spinoza", "portrait": "spinoza.jpg", "quote": "Fear cannot be without hope, nor hope without fear."},
+
+  {"author": "Locke", "portrait": "locke.jpg", "quote": "No man's knowledge here can go beyond his experience."},
+  {"author": "Locke", "portrait": "locke.jpg", "quote": "Reading furnishes the mind only with materials of knowledge; it is thinking that makes what we read ours."},
+  {"author": "Locke", "portrait": "locke.jpg", "quote": "The discipline of desire is the background of character."},
+  {"author": "Locke", "portrait": "locke.jpg", "quote": "New opinions are always suspected, and usually opposed, without any other reason but because they are not already common."},
+
+  {"author": "Hume", "portrait": "hume.jpg", "quote": "Custom is the great guide of human life."},
+  {"author": "Hume", "portrait": "hume.jpg", "quote": "A wise man proportions his belief to the evidence."},
+  {"author": "Hume", "portrait": "hume.jpg", "quote": "The heart of man is made to reconcile the most glaring contradictions."},
+  {"author": "Hume", "portrait": "hume.jpg", "quote": "Beauty in things exists in the mind which contemplates them."},
+
+  {"author": "Rousseau", "portrait": "rousseau.jpg", "quote": "Man is born free, and everywhere he is in chains."},
+  {"author": "Rousseau", "portrait": "rousseau.jpg", "quote": "The world of reality has its limits; the world of imagination is boundless."},
+  {"author": "Rousseau", "portrait": "rousseau.jpg", "quote": "People who know little are usually great talkers, while men who know much say little."},
+  {"author": "Rousseau", "portrait": "rousseau.jpg", "quote": "To live is not to breathe but to act."},
+
+  {"author": "Hegel", "portrait": "hegel.jpg", "quote": "We learn from history that we do not learn from history."},
+  {"author": "Hegel", "portrait": "hegel.jpg", "quote": "The owl of Minerva spreads its wings only with the falling of dusk."},
+  {"author": "Hegel", "portrait": "hegel.jpg", "quote": "Nothing great in the world has ever been accomplished without passion."},
+  {"author": "Hegel", "portrait": "hegel.jpg", "quote": "The true is the whole."},
+
+  {"author": "Schopenhauer", "portrait": "schopenhauer.jpg", "quote": "Talent hits a target no one else can hit; genius hits a target no one else can see."},
+  {"author": "Schopenhauer", "portrait": "schopenhauer.jpg", "quote": "We forfeit three-fourths of ourselves in order to be like other people."},
+  {"author": "Schopenhauer", "portrait": "schopenhauer.jpg", "quote": "The two enemies of human happiness are pain and boredom."},
+  {"author": "Schopenhauer", "portrait": "schopenhauer.jpg", "quote": "Every man takes the limits of his own field of vision for the limits of the world."},
+
+  {"author": "Kierkegaard", "portrait": "kierkegaard.png", "quote": "Life can only be understood backwards; but it must be lived forwards."},
+  {"author": "Kierkegaard", "portrait": "kierkegaard.png", "quote": "Anxiety is the dizziness of freedom."},
+  {"author": "Kierkegaard", "portrait": "kierkegaard.png", "quote": "The most common form of despair is not being who you are."},
+  {"author": "Kierkegaard", "portrait": "kierkegaard.png", "quote": "Once you label me, you negate me."},
+
+  {"author": "Mill", "portrait": "mill.jpg", "quote": "It is better to be a human being dissatisfied than a pig satisfied."},
+  {"author": "Mill", "portrait": "mill.jpg", "quote": "He who knows only his own side of the case knows little of that."},
+  {"author": "Mill", "portrait": "mill.jpg", "quote": "The worth of a state, in the long run, is the worth of the individuals composing it."},
+  {"author": "Mill", "portrait": "mill.jpg", "quote": "A person may cause evil to others not only by his actions but by his inaction."},
+
+  {"author": "Sartre", "portrait": "sartre.jpg", "quote": "Man is condemned to be free."},
+  {"author": "Sartre", "portrait": "sartre.jpg", "quote": "Freedom is what you do with what's been done to you."},
+  {"author": "Sartre", "portrait": "sartre.jpg", "quote": "Hell is other people."},
+  {"author": "Sartre", "portrait": "sartre.jpg", "quote": "Life has no meaning a priori. It is up to you to give it a meaning."},
+
+  {"author": "Camus", "portrait": "camus.jpg", "quote": "In the depth of winter, I finally learned that within me there lay an invincible summer."},
+  {"author": "Camus", "portrait": "camus.jpg", "quote": "You will never be happy if you continue to search for what happiness consists of."},
+  {"author": "Camus", "portrait": "camus.jpg", "quote": "The only way to deal with an unfree world is to become so absolutely free that your existence is an act of rebellion."},
+  {"author": "Camus", "portrait": "camus.jpg", "quote": "Nobody realizes that some people expend tremendous energy merely to be normal."},
+
+  {"author": "Lao Tzu", "portrait": "laotzu.jpg", "quote": "A journey of a thousand miles begins with a single step."},
+  {"author": "Lao Tzu", "portrait": "laotzu.jpg", "quote": "Nature does not hurry, yet everything is accomplished."},
+  {"author": "Lao Tzu", "portrait": "laotzu.jpg", "quote": "When I let go of what I am, I become what I might be."},
+  {"author": "Lao Tzu", "portrait": "laotzu.jpg", "quote": "Knowing others is wisdom, knowing yourself is enlightenment."},
+
+  {"author": "Buddha", "portrait": "buddha.jpg", "quote": "Peace comes from within. Do not seek it without."},
+  {"author": "Buddha", "portrait": "buddha.jpg", "quote": "The mind is everything. What you think you become."},
+  {"author": "Buddha", "portrait": "buddha.jpg", "quote": "Three things cannot be long hidden: the sun, the moon, and the truth."},
+  {"author": "Buddha", "portrait": "buddha.jpg", "quote": "Holding on to anger is like drinking poison and expecting the other person to die."}
 ]

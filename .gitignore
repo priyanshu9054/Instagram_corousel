@@ -5,7 +5,7 @@
 # Runtime-generated state (recreated on every run / persisted via DATA_DIR volume in prod)
 assets/content_log.json
 assets/strategy.json
-assets/.last_quote.json
+assets/.quote_shuffle.json
 assets/.last_track.json
 assets/jobs.json
 assets/_carousel_current/
