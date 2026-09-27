@@ -134,6 +134,46 @@ def session_status(x_api_key: str | None = Header(default=None)):
     }
 
 
+@app.get("/diagnostics")
+def diagnostics(x_api_key: str | None = Header(default=None)):
+    """
+    Container resource info — added while diagnosing ffmpeg getting SIGKILL'd (exit
+    -9) on Railway. cgroup limits (what the container is actually capped at) matter
+    more than /proc/meminfo's host-level totals, which can be misleading inside a
+    container.
+    """
+    _check_key(x_api_key)
+    info = {}
+
+    try:
+        meminfo = {}
+        for line in open("/proc/meminfo"):
+            parts = line.split(":")
+            if len(parts) == 2:
+                meminfo[parts[0].strip()] = parts[1].strip()
+        info["proc_meminfo"] = {
+            k: meminfo[k] for k in ("MemTotal", "MemFree", "MemAvailable") if k in meminfo
+        }
+    except Exception as e:
+        info["proc_meminfo_error"] = str(e)
+
+    for cgroup_path in [
+        "/sys/fs/cgroup/memory.max",  # cgroup v2
+        "/sys/fs/cgroup/memory/memory.limit_in_bytes",  # cgroup v1
+    ]:
+        try:
+            info[cgroup_path] = open(cgroup_path).read().strip()
+        except Exception as e:
+            info[f"{cgroup_path}_error"] = str(e)
+
+    try:
+        info["cpu_count"] = os.cpu_count()
+    except Exception as e:
+        info["cpu_count_error"] = str(e)
+
+    return info
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
