@@ -98,7 +98,9 @@ def rebuild_from_instagram(cl, limit: int = 100) -> list[dict]:
             "caption": caption,
             "media_pk": pk,
             "media_code": media.code,
-            "media_url": f"https://www.instagram.com/p/{media.code}/",
+            # Key matches what run.py's live log_post writes, so a rebuilt record and
+            # a natively-logged one have the same shape.
+            "url": f"https://www.instagram.com/p/{media.code}/",
             "metrics": {
                 "like_count": media.like_count,
                 "comment_count": media.comment_count,
