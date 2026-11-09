@@ -21,11 +21,13 @@ ROOT = Path(__file__).resolve().parent.parent
 # Static, bundled assets that ship with the code (quotes, portraits, audio library).
 STATIC_ASSETS_DIR = ROOT / "assets"
 
-# Durable runtime state (growth-strategy weights, content log, last-picked state,
-# the Instagram login session). Defaults to living alongside the code for local dev.
-# On a host with an ephemeral filesystem (e.g. Railway without a volume), every
-# redeploy wipes this — set DATA_DIR to a mounted volume's path (e.g. "/data") in
-# the environment so the strategy/analytics loop actually persists across deploys.
+# Runtime state (growth-strategy weights, content log, last-picked state, the
+# Instagram login session). Defaults to living alongside the code for local dev.
+# This is deliberately treated as a CACHE, not durable storage: the deployment runs
+# without a persistent volume, so every redeploy wipes it. Recovery goes through the
+# API instead — the session from INSTAGRAM_SESSION_JSON or POST /session/upload, and
+# the content log / strategy rebuilt from the account's real posts (content_log.
+# rebuild_from_instagram, POST /state/rebuild). Nothing here may be assumed to exist.
 DATA_DIR = Path(getenv_clean("DATA_DIR", str(ROOT)))
 STATE_DIR = DATA_DIR / "assets"
 SESSION_DIR = DATA_DIR / ".ig_session"

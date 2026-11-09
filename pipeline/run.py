@@ -107,19 +107,23 @@ def run_pipeline(dry_run: bool = False, content_type: Optional[str] = None) -> d
     if not username or not password:
         raise RuntimeError("INSTAGRAM_USERNAME / INSTAGRAM_PASSWORD missing from .env")
 
+    # Log in before the strategy pick: the content-type cycle is driven by how many
+    # posts exist, and on a host with no persistent volume that count has to come back
+    # from the Instagram API (the log file died with the last container).
+    print(f"Logging in as @{username}...")
+    cl = ig_client.get_client(username, password)
+    log_records = content_log.hydrate_if_empty(cl)
+
     live_strategy = strategy.load_strategy()
     chosen_author = strategy.choose_author(live_strategy)
     if content_type:
         chosen_type = content_type
     else:
-        post_index = len(content_log.load_log())
+        post_index = len(log_records)
         cycle_slot = strategy.CONTENT_TYPE_CYCLE[post_index % len(strategy.CONTENT_TYPE_CYCLE)]
         chosen_type = strategy.choose_content_type_cycled(post_index, live_strategy)
         print(f"Content-type cycle: post #{post_index} -> slot '{cycle_slot}' -> {chosen_type}")
     print(f"Strategy picked: content_type={chosen_type}, author={chosen_author}")
-
-    print(f"Logging in as @{username}...")
-    cl = ig_client.get_client(username, password)
 
     if chosen_type == "carousel":
         built = _build_carousel(chosen_author)

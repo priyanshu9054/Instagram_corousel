@@ -14,8 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV PYTHONUNBUFFERED=1
-# Durable state (strategy, content log, IG session) — mount a volume here so it
-# survives container restarts/redeploys instead of living in requirements.txt.
+# Scratch dir for runtime state (strategy, content log, IG session). No volume is
+# mounted here on purpose: this state is ephemeral and gets recovered through the API
+# after a redeploy (see server.py's /session/upload and /state/rebuild).
 ENV DATA_DIR=/data
 RUN mkdir -p /data
 

@@ -31,13 +31,23 @@ Inspect current strategy weights / recent post log (read-only):
     curl http://localhost:8000/strategy -H "x-api-key: $API_TRIGGER_KEY"
     curl http://localhost:8000/content-log -H "x-api-key: $API_TRIGGER_KEY"
 
-Seed this deployment's Instagram session from an already-trusted local one (avoids
-a scrutinized fresh login from a datacenter IP) — without a persistent volume this
-only lasts until the next restart/redeploy:
+This deployment assumes NO persistent volume: the session, content log and strategy
+files all die with the container, and everything is recovered through the API instead.
+
+Instagram session. A cold password login from a datacenter IP on an unrecognized
+device gets challenged for an emailed code that a server can't answer, so the session
+has to be established somewhere interactive and handed over. Set INSTAGRAM_SESSION_JSON
+(raw JSON or base64) to survive redeploys, or push one into a running container:
     curl -X POST http://localhost:8000/session/upload -H "x-api-key: $API_TRIGGER_KEY" \
       -H "Content-Type: application/json" -d @.ig_session/instagrapi_settings.json
     curl http://localhost:8000/session/status -H "x-api-key: $API_TRIGGER_KEY"
+    curl http://localhost:8000/session/export -H "x-api-key: $API_TRIGGER_KEY"
+
+Content log / strategy. Rebuilt from the account's real posts — a pipeline run does
+this automatically when the log is empty, or force it:
+    curl -X POST http://localhost:8000/state/rebuild -H "x-api-key: $API_TRIGGER_KEY"
 """
+import base64
 import json
 import os
 from typing import Optional
@@ -87,6 +97,7 @@ def analyze(x_api_key: str | None = Header(default=None)):
 
     def _analyze():
         cl = ig_client.get_client(username, password)
+        content_log.hydrate_if_empty(cl)
         return analytics.run_analysis_cycle(cl)
 
     job_id = jobs.run_in_background("analyze", _analyze)
@@ -140,6 +151,60 @@ def session_status(x_api_key: str | None = Header(default=None)):
         "path": str(ig_client.SESSION_FILE),
         "size_bytes": ig_client.SESSION_FILE.stat().st_size if exists else None,
     }
+
+
+@app.get("/session/export")
+def export_session(x_api_key: str | None = Header(default=None)):
+    """
+    Dump the live session so it can be pasted into the INSTAGRAM_SESSION_JSON env var.
+    A session refreshed by a successful login only lives as long as this container, so
+    exporting it after a healthy run is what makes the next redeploy cold-start-free.
+
+    Returns real login credentials — treat the response like the account password.
+    """
+    _check_key(x_api_key)
+    settings = ig_client.export_settings()
+    if settings is None:
+        raise HTTPException(status_code=404, detail="no session on disk yet")
+    raw = json.dumps(settings)
+    return {
+        "settings": settings,
+        "base64": base64.b64encode(raw.encode()).decode(),
+        "bytes": len(raw),
+    }
+
+
+@app.post("/state/rebuild")
+def rebuild_state(limit: int = 100, x_api_key: str | None = Header(default=None)):
+    """
+    Rebuild the content log from the account's real Instagram posts, then re-derive the
+    strategy weights from it. This is the recovery path for running without a persistent
+    volume: the log and strategy files die with each container, but the posts don't.
+
+    Post count, media ids, timestamps, content types and metrics come back exactly; the
+    author is only matched heuristically from the caption and the quote not at all, so a
+    rebuilt log is thinner than one accumulated live.
+    """
+    _check_key(x_api_key)
+
+    username = getenv_clean("INSTAGRAM_USERNAME")
+    password = getenv_clean("INSTAGRAM_PASSWORD")
+    if not username or not password:
+        raise HTTPException(status_code=500, detail="INSTAGRAM_USERNAME / INSTAGRAM_PASSWORD missing from .env")
+
+    def _rebuild():
+        cl = ig_client.get_client(username, password)
+        records = content_log.rebuild_from_instagram(cl, limit=limit)
+        report = analytics.run_analysis_cycle(cl)
+        return {
+            "posts_recovered": len(records),
+            "authors_matched": sum(1 for r in records if r.get("author")),
+            "next_post_index": len(records),
+            "analysis": report,
+        }
+
+    job_id = jobs.run_in_background("state-rebuild", _rebuild)
+    return {"status": "started", "job_id": job_id}
 
 
 @app.get("/diagnostics")
