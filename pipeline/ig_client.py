@@ -112,11 +112,22 @@ def get_client(username: str, password: str) -> Client:
         device = (settings.get("device_settings") or {}).get("model")
         print(f"Re-login reusing device fingerprint: {device or 'unknown'}")
     else:
-        print(
-            "No saved session (no file, no INSTAGRAM_SESSION_JSON) — attempting a cold "
-            "password login on a brand-new device fingerprint. Instagram will very "
-            "likely demand an email code, which this process cannot answer."
+        # A cold login here is not just likely to fail, it's harmful: each attempt
+        # sends the account another challenge email and adds to whatever risk score
+        # Instagram keeps, pushing it toward a real lock. Refuse by default rather
+        # than retrying something that cannot succeed unattended.
+        message = (
+            "No Instagram session available (no session file, and INSTAGRAM_SESSION_JSON "
+            "is not set in this environment). A cold password login from here would be "
+            "challenged for an emailed code that this process cannot answer, so it is "
+            "not attempted. Fix by setting INSTAGRAM_SESSION_JSON, or POST a locally "
+            "dumped instagrapi_settings.json to /session/upload. Check GET /diagnostics "
+            "to see which variables actually reached the container. Set "
+            "ALLOW_COLD_LOGIN=true to override and try anyway."
         )
+        if (getenv_clean("ALLOW_COLD_LOGIN") or "").lower() not in ("1", "true", "yes"):
+            raise RuntimeError(message)
+        print(f"{message}\n\nALLOW_COLD_LOGIN is set — attempting the cold login anyway.")
 
     cl.login(username, password)
     _persist(cl)

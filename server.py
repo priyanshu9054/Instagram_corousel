@@ -244,6 +244,30 @@ def diagnostics(x_api_key: str | None = Header(default=None)):
     except Exception as e:
         info["cpu_count_error"] = str(e)
 
+    # Which config actually reached the container. Names and lengths only, never
+    # values: "I set that variable" and "the process can read that variable" keep
+    # turning out to be different things (wrong service, wrong environment, an
+    # unreferenced shared variable, or a stray space in the variable's name).
+    expected = [
+        "INSTAGRAM_USERNAME",
+        "INSTAGRAM_PASSWORD",
+        "INSTAGRAM_SESSION_JSON",
+        "API_TRIGGER_KEY",
+        "GROQ_API_KEY",
+        "DATA_DIR",
+    ]
+    info["env"] = {
+        name: {"set": bool(getenv_clean(name)), "chars": len(getenv_clean(name) or "")}
+        for name in expected
+    }
+    # Near-misses: anything whose name looks related but isn't an exact match above,
+    # which is what a typo or a trailing space in the key looks like from in here.
+    info["env_related_keys"] = sorted(
+        repr(k) for k in os.environ
+        if ("INSTAGRAM" in k.upper() or "SESSION" in k.upper()) and k not in expected
+    )
+    info["session_file_present"] = ig_client.SESSION_FILE.exists()
+
     return info
 
 
